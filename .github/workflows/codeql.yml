@@ -1,0 +1,37 @@
+# Análise de segurança do código com o CodeQL, do próprio GitHub.
+# É gratuita para repositórios públicos e não precisa de conta nem de credenciais.
+# Os alertas aparecem na aba "Security" do repositório, em "Code scanning".
+name: CodeQL
+
+on:
+  push:
+    branches: [ "main", "developer" ]
+  pull_request:
+    branches: [ "main", "developer" ]
+  schedule:
+    - cron: "27 9 * * 1"   # toda segunda-feira, 06:27 em Brasília
+  workflow_dispatch:
+
+jobs:
+  analisar:
+    name: Analisar JavaScript
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Iniciar o CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          build-mode: none
+
+      - name: Rodar a análise
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"
