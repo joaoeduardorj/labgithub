@@ -86,6 +86,19 @@ body {
 .btn-submit:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
 .btn-submit:active { background: color-mix(in srgb, var(--accent) 22%, transparent); }
 .error { color: var(--error); font-size: 13px; margin: 8px 0 0; text-align: center; }
+.field-row { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; }
+.field-row .field { min-width: 0; }
+.combo { position: relative; }
+.sugestoes {
+  position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 5;
+  margin: 0; padding: 4px; list-style: none; max-height: 240px; overflow-y: auto;
+  background: #1d2030; border: 1px solid var(--divider); border-radius: var(--radius);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .5);
+}
+.sugestoes li { padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+.sugestoes li small { display: block; font-size: 12px; color: var(--muted); }
+.sugestoes li[aria-selected="true"], .sugestoes li:hover { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.sugestoes li.info { cursor: default; color: var(--muted); background: none; }
 
 /* Resultados: cartões de vidro que surgem um a um e ficam flutuando no espaço */
 @keyframes pop { from { opacity: 0; scale: .6; } 60% { opacity: 1; scale: 1.05; } to { opacity: 1; scale: 1; } }
@@ -127,6 +140,8 @@ body {
 .result-card:nth-child(4) { --tilt: 2deg;    --lift: -8px;  --dur: 5.5s; }
 .result-card:nth-child(5) { --tilt: -2deg;   --lift: -11px; --dur: 7.5s; }
 .result-card:nth-child(6) { --tilt: 1deg;    --lift: -9px;  --dur: 6.2s; }
+.result-card:nth-child(7) { --tilt: -1deg;   --lift: -13px; --dur: 6.8s; }
+.result-card:nth-child(8) { --tilt: 1.5deg;  --lift: -10px; --dur: 7.2s; }
 .result-card.large { grid-column: 1 / -1; }
 .result-label {
   font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
@@ -170,6 +185,12 @@ body {
 .moon .dark { fill: #1b2140; }
 .moon .lit { fill: #fff1b8; }
 .moon .rim { fill: none; stroke: rgba(255, 241, 184, .35); stroke-width: .8; }
+
+/* Perfil astrológico: texto corrido, então o cartão inclina e flutua menos */
+.result-card.card-perfil { --tint: #ff9ad5; --tilt: .3deg; --lift: -6px; padding: 22px 22px 18px; }
+.perfil { margin: 0; text-align: left; font-size: 15px; line-height: 1.65; }
+.perfil b { color: #ffc4e6; font-weight: 600; }
+.aviso { margin: 12px 0 0; font-size: 11px; color: var(--muted); }
 
 .note {
   grid-column: 1 / -1; margin: 0; font-size: 14px; text-align: center;
@@ -245,15 +266,27 @@ body {
   <section class="input-section">
     <div class="form-group">
       <h1 class="form-title">Sua idade nas estrelas</h1>
-      <p class="lede">Descubra sua idade, seu signo e a fase da lua no dia em que você nasceu.</p>
+      <p class="lede">Descubra sua idade, seu signo, seu ascendente e a fase da lua no momento em que você nasceu.</p>
       <form id="form" novalidate>
         <div class="field">
           <label for="nome">Nome completo</label>
           <input id="nome" name="nome" class="input" type="text" autocomplete="name" placeholder="Ex.: Maria da Silva Santos" aria-describedby="erro">
         </div>
-        <div class="field">
-          <label for="nasc">Data de nascimento</label>
-          <input id="nasc" name="nasc" class="input" type="date" aria-describedby="erro">
+        <div class="field-row">
+          <div class="field">
+            <label for="nasc">Data de nascimento</label>
+            <input id="nasc" name="nasc" class="input" type="date" aria-describedby="erro">
+          </div>
+          <div class="field">
+            <label for="hora">Hora</label>
+            <input id="hora" name="hora" class="input" type="time" aria-describedby="erro">
+          </div>
+        </div>
+        <div class="field combo">
+          <label for="cidade">Cidade de nascimento</label>
+          <input id="cidade" name="cidade" class="input" type="text" autocomplete="off" placeholder="Comece a digitar e escolha na lista"
+                 role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="sugestoes" aria-describedby="erro">
+          <ul id="sugestoes" class="sugestoes" role="listbox" aria-label="Cidades encontradas" hidden></ul>
         </div>
         <button type="submit" class="btn-submit">Calcular</button>
         <p class="error" id="erro" role="alert" hidden></p>
@@ -350,7 +383,13 @@ body {
         <div class="result-value text" id="r-signo"></div>
         <p class="result-sub" id="r-signo-meta"></p>
       </div>
-      <div class="result-card card-lua" style="--i:2">
+      <div class="result-card card-signo" id="c-asc" style="--i:2">
+        <div class="result-label">Ascendente</div>
+        <div class="glyph" id="r-asc-glifo" aria-hidden="true"></div>
+        <div class="result-value text" id="r-asc"></div>
+        <p class="result-sub" id="r-asc-meta"></p>
+      </div>
+      <div class="result-card large card-lua" style="--i:3">
         <div class="result-label">Lua ao nascer</div>
         <svg class="moon" viewBox="-22 -22 44 44" role="img" aria-labelledby="r-lua">
           <circle class="dark" r="20"></circle>
@@ -359,17 +398,23 @@ body {
         </svg>
         <div class="result-value text" id="r-lua"></div>
         <p class="result-sub" id="r-lua-meta"></p>
+        <p class="result-sub" id="r-lua-signo"></p>
       </div>
-      <div class="result-card card-dias" style="--i:3">
+      <div class="result-card large card-perfil" style="--i:4">
+        <div class="result-label">Seu perfil nas estrelas</div>
+        <p class="perfil" id="r-perfil"></p>
+        <p class="aviso">Interpretação astrológica tradicional, para diversão.</p>
+      </div>
+      <div class="result-card card-dias" style="--i:5">
         <div class="result-label">Dias vividos</div>
         <div class="result-value" id="r-dias"></div>
       </div>
-      <div class="result-card card-prox" style="--i:4">
+      <div class="result-card card-prox" style="--i:6">
         <div class="result-label">Próx. aniversário</div>
         <div class="result-value" id="r-prox"></div>
         <p class="result-sub" id="r-prox-sub"></p>
       </div>
-      <div class="result-card large card-sem" style="--i:5">
+      <div class="result-card large card-sem" style="--i:7">
         <div class="result-label">Nasceu em</div>
         <div class="result-value text" id="r-sem"></div>
         <p class="result-sub" id="r-data"></p>
@@ -446,16 +491,22 @@ function signo(nasc) {
 }
 
 // Fase da lua: elongação Lua–Sol pelas fórmulas de baixa precisão de Jean Meeus,
-// calculada ao meio-dia de Brasília (15h UTC), já que a hora do nascimento não é informada.
+// calculada no instante do nascimento (em milissegundos UTC).
 const rad = d => d * Math.PI / 180, norm = d => ((d % 360) + 360) % 360;
 const FASES = ["Lua Nova", "Lua Crescente", "Quarto Crescente", "Crescente Gibosa",
                "Lua Cheia", "Minguante Gibosa", "Quarto Minguante", "Lua Minguante"];
-function faseLua(nasc) {
-  const jd = Date.UTC(nasc.getFullYear(), nasc.getMonth(), nasc.getDate(), 15) / DAY + 2440587.5;
-  const T = (jd - 2451545) / 36525;
-  const D  = norm(297.8501921 + 445267.1114034 * T);
-  const M  = norm(357.5291092 + 35999.0502909 * T);
-  const Mp = norm(134.9633964 + 477198.8675055 * T);
+function argsLua(utc) {
+  const T = (utc / DAY + 2440587.5 - 2451545) / 36525;
+  return {
+    T,
+    D:  norm(297.8501921 + 445267.1114034 * T),
+    M:  norm(357.5291092 + 35999.0502909 * T),
+    Mp: norm(134.9633964 + 477198.8675055 * T),
+    F:  norm(93.2720950 + 483202.0175233 * T),
+  };
+}
+function faseLua(utc) {
+  const { D, M, Mp } = argsLua(utc);
   const E = norm(D + 6.289 * Math.sin(rad(Mp)) - 2.100 * Math.sin(rad(M))
     + 1.274 * Math.sin(rad(2 * D - Mp)) + 0.658 * Math.sin(rad(2 * D))
     + 0.214 * Math.sin(rad(2 * Mp)) + 0.110 * Math.sin(rad(D)));
@@ -471,7 +522,187 @@ function desenhoLua(ilum, crescente, r = 20) {
   return `M0 ${-r} A${r} ${r} 0 0 ${arco} 0 ${r} A${rx} ${r} 0 0 ${term} 0 ${-r}Z`;
 }
 
-function mostrar(nome, nasc) {
+// Converte data e hora locais de um fuso IANA para UTC. O navegador conhece o histórico de
+// fusos e de horários de verão, então o resultado vale também para datas antigas.
+function offsetFuso(ms, tz) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", {
+    timeZone: tz, hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric",
+    hour: "numeric", minute: "numeric", second: "numeric",
+  }).formatToParts(new Date(ms)).map(x => [x.type, +x.value]));
+  return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - ms;
+}
+function localParaUTC(nasc, h, m, tz) {
+  const local = Date.UTC(nasc.getFullYear(), nasc.getMonth(), nasc.getDate(), h, m);
+  return local - offsetFuso(local - offsetFuso(local, tz), tz);
+}
+
+// Ascendente: grau da eclíptica que nasce no horizonte leste, a partir do tempo sideral
+// local (fórmulas de Meeus) e da latitude do local de nascimento.
+const ORDEM = ["Áries", "Touro", "Gêmeos", "Câncer", "Leão", "Virgem",
+               "Libra", "Escorpião", "Sagitário", "Capricórnio", "Aquário", "Peixes"];
+function ascendente(utc, lat, lon) {
+  const jd = utc / DAY + 2440587.5, T = (jd - 2451545) / 36525;
+  const gmst = 280.46061837 + 360.98564736629 * (jd - 2451545) + 0.000387933 * T * T - T * T * T / 38710000;
+  const ramc = rad(norm(gmst + lon)), eps = rad(23.439291 - 0.0130042 * T), phi = rad(lat);
+  const lam = norm(Math.atan2(Math.cos(ramc),
+    -(Math.sin(ramc) * Math.cos(eps) + Math.tan(phi) * Math.sin(eps))) * 180 / Math.PI);
+  const s = SIGNOS.find(x => x.nome === ORDEM[Math.floor(lam / 30)]);
+  return { ...s, grau: Math.floor(lam % 30) };
+}
+
+// Busca de cidades no serviço gratuito de geocodificação do Open-Meteo
+// (devolve coordenadas e fuso horário). A cidade só vale se escolhida na lista.
+const cidade = $("cidade"), lista = $("sugestoes");
+let lugar = null, opcoes = [], ativa = -1, buscaId = 0, espera;
+
+function fecharLista() {
+  lista.hidden = true; lista.innerHTML = ""; ativa = -1;
+  cidade.setAttribute("aria-expanded", "false");
+  cidade.removeAttribute("aria-activedescendant");
+}
+function infoLista(texto) {
+  opcoes = []; ativa = -1;
+  lista.innerHTML = "";
+  const li = document.createElement("li");
+  li.className = "info"; li.textContent = texto;
+  lista.append(li);
+  lista.hidden = false; cidade.setAttribute("aria-expanded", "true");
+}
+function desenharLista() {
+  if (!opcoes.length) return infoLista("Nenhuma cidade encontrada.");
+  lista.innerHTML = "";
+  opcoes.forEach((c, i) => {
+    const li = document.createElement("li");
+    li.id = "op-" + i; li.setAttribute("role", "option");
+    li.setAttribute("aria-selected", i === ativa ? "true" : "false");
+    li.textContent = c.name;
+    const extra = document.createElement("small");
+    extra.textContent = [c.admin1, c.country].filter(Boolean).join(", ");
+    li.append(extra);
+    li.addEventListener("mousedown", e => { e.preventDefault(); escolher(i); });
+    lista.append(li);
+  });
+  lista.hidden = false; cidade.setAttribute("aria-expanded", "true");
+  if (ativa >= 0) { cidade.setAttribute("aria-activedescendant", "op-" + ativa); $("op-" + ativa).scrollIntoView({ block: "nearest" }); }
+  else cidade.removeAttribute("aria-activedescendant");
+}
+function escolher(i) {
+  const c = opcoes[i];
+  lugar = { nome: c.name, lat: c.latitude, lon: c.longitude, tz: c.timezone };
+  cidade.value = [c.name, c.admin1 || c.country].filter(Boolean).join(", ");
+  fecharLista();
+}
+async function buscarCidades(q) {
+  const id = ++buscaId;
+  infoLista("Buscando…");
+  try {
+    const resp = await fetch("https://geocoding-api.open-meteo.com/v1/search?count=6&language=pt&format=json&name=" + encodeURIComponent(q));
+    if (!resp.ok) throw new Error(resp.status);
+    const dados = await resp.json();
+    if (id !== buscaId) return;
+    opcoes = (dados.results || []).filter(c => c.timezone);
+    ativa = -1;
+    desenharLista();
+  } catch {
+    if (id === buscaId) infoLista("Não foi possível buscar cidades. Verifique sua conexão.");
+  }
+}
+cidade.addEventListener("input", () => {
+  lugar = null;
+  clearTimeout(espera);
+  const q = cidade.value.trim();
+  if (q.length < 2) { buscaId++; return fecharLista(); }
+  espera = setTimeout(() => buscarCidades(q), 300);
+});
+cidade.addEventListener("keydown", e => {
+  if (lista.hidden || !opcoes.length) { if (e.key === "Escape") fecharLista(); return; }
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    e.preventDefault();
+    ativa = (ativa + (e.key === "ArrowDown" ? 1 : -1) + opcoes.length) % opcoes.length;
+    desenharLista();
+  } else if (e.key === "Enter" && ativa >= 0) {
+    e.preventDefault(); escolher(ativa);
+  } else if (e.key === "Escape") fecharLista();
+});
+cidade.addEventListener("blur", () => setTimeout(fecharLista, 100));
+
+// Signo lunar: longitude eclíptica da Lua pelos termos principais da teoria de Meeus
+// (precisão de alguns décimos de grau, suficiente para o signo).
+function signoLunar(utc) {
+  const { T, D, M, Mp, F } = argsLua(utc);
+  const s = x => Math.sin(rad(x));
+  const lam = norm(218.3164477 + 481267.88123421 * T
+    + 6.289 * s(Mp) + 1.274 * s(2 * D - Mp) + 0.658 * s(2 * D) + 0.214 * s(2 * Mp)
+    - 0.186 * s(M) - 0.114 * s(2 * F) + 0.059 * s(2 * D - 2 * Mp) + 0.057 * s(2 * D - M - Mp)
+    + 0.053 * s(2 * D + Mp) + 0.046 * s(2 * D - M) + 0.041 * s(Mp - M) - 0.035 * s(D) - 0.031 * s(M + Mp));
+  const sig = SIGNOS.find(x => x.nome === ORDEM[Math.floor(lam / 30)]);
+  return { ...sig, grau: Math.floor(lam % 30) };
+}
+
+// Interpretações astrológicas tradicionais, escritas sem marcar gênero.
+const PERFIL_SOL = {
+  "Áries": "tem energia de sobra, coragem para começar coisas novas e um jeito direto e competitivo",
+  "Touro": "busca estabilidade e conforto, com paciência, persistência e gosto pelos prazeres da vida",
+  "Gêmeos": "tem a mente curiosa e ágil, adora conversar, aprender e circular entre ideias e pessoas",
+  "Câncer": "tem um jeito acolhedor e intuitivo, com forte ligação com a família, a casa e as memórias",
+  "Leão": "tem brilho próprio, generosidade e criatividade, e gosta de se expressar com o coração",
+  "Virgem": "tem olhar atento aos detalhes, senso prático e vontade genuína de ser útil e fazer bem feito",
+  "Libra": "busca harmonia e equilíbrio, com charme, senso estético e talento para a diplomacia",
+  "Escorpião": "tem intensidade e profundidade, intuição aguçada e grande capacidade de se transformar",
+  "Sagitário": "tem espírito livre e otimista, sede de conhecimento e paixão por novos horizontes",
+  "Capricórnio": "tem ambição, disciplina e senso de responsabilidade, e constrói seus objetivos passo a passo",
+  "Aquário": "tem pensamento original e independente, valoriza a liberdade e se importa com causas coletivas",
+  "Peixes": "tem sensibilidade, imaginação e empatia, com forte ligação com os sonhos e a arte",
+};
+const PERFIL_ASC = {
+  "Áries": "dá uma primeira impressão de energia e iniciativa, de quem age rápido e vai direto ao ponto",
+  "Touro": "transmite calma e confiabilidade, com uma presença serena e agradável",
+  "Gêmeos": "traz um jeito comunicativo e espirituoso, que puxa conversa com facilidade",
+  "Câncer": "transmite doçura e receptividade, e faz os outros se sentirem à vontade",
+  "Leão": "garante uma presença marcante e calorosa, difícil de passar despercebida",
+  "Virgem": "mostra um jeito discreto, observador e prestativo logo no primeiro contato",
+  "Libra": "traz elegância e simpatia, com um jeito gentil de lidar com as pessoas",
+  "Escorpião": "dá um ar magnético e reservado, que desperta curiosidade",
+  "Sagitário": "transmite entusiasmo e bom humor, com um jeito franco e aventureiro",
+  "Capricórnio": "passa a imagem de alguém sério, maduro e focado no que quer",
+  "Aquário": "mostra um jeito original e amigável, às vezes um pouco fora do comum",
+  "Peixes": "transmite suavidade e empatia, com um ar sonhador",
+};
+const PERFIL_LUA = {
+  "Áries": "as emoções surgem rápidas e intensas, e passam com a mesma rapidez",
+  "Touro": "a segurança emocional vem da estabilidade, do carinho e das rotinas tranquilas",
+  "Gêmeos": "conversar e trocar ideias é o caminho para entender o que sente",
+  "Câncer": "sente tudo profundamente e cuida de quem ama com dedicação",
+  "Leão": "precisa de afeto e reconhecimento, e demonstra o que sente com generosidade",
+  "Virgem": "lida com as emoções de forma prática e cuida dos outros nos pequenos detalhes",
+  "Libra": "busca paz nas relações e se sente bem quando há equilíbrio ao redor",
+  "Escorpião": "vive as emoções com intensidade e guarda os sentimentos mais profundos para poucos",
+  "Sagitário": "precisa de liberdade e otimismo para se sentir bem, e foge de climas pesados",
+  "Capricórnio": "costuma guardar as emoções e demonstra afeto por meio de atitudes",
+  "Aquário": "precisa de espaço próprio e lida com os sentimentos de forma racional e independente",
+  "Peixes": "tem grande sensibilidade, absorve o clima ao redor e se emociona com facilidade",
+};
+const PERFIL_FASE = {
+  "Lua Nova": "costuma ter espírito pioneiro e gosta de começar projetos do zero",
+  "Lua Crescente": "tende a ter muita vontade de crescer e de superar obstáculos",
+  "Quarto Crescente": "costuma enfrentar os desafios de frente e tomar decisões com firmeza",
+  "Crescente Gibosa": "tende a buscar aperfeiçoamento constante e a lapidar tudo o que faz",
+  "Lua Cheia": "tende a viver tudo com intensidade e a dar grande valor aos relacionamentos",
+  "Minguante Gibosa": "costuma gostar de compartilhar o que aprende e de ensinar os outros",
+  "Quarto Minguante": "tende a questionar o que está estabelecido e a buscar novos caminhos",
+  "Lua Minguante": "costuma ter uma sabedoria introspectiva e facilidade para deixar o passado para trás",
+};
+function textoPerfil(nome, sol, asc, luaSig, fase) {
+  const el = document.createDocumentFragment();
+  const add = (txt, negrito) => el.append(negrito ? Object.assign(document.createElement("b"), { textContent: txt }) : txt);
+  add("Com o "); add(`Sol em ${sol}`, true); add(`, ${nome} ${PERFIL_SOL[sol]}. O `);
+  add(`ascendente em ${asc}`, true); add(` ${PERFIL_ASC[asc]}. Com a `);
+  add(`Lua em ${luaSig}`, true); add(`, ${PERFIL_LUA[luaSig]}. E quem nasce na fase `);
+  add(fase, true); add(` ${PERFIL_FASE[fase]}.`);
+  return el;
+}
+
+function mostrar(nome, nasc, utc, hora) {
   const r = calcular(nasc, hoje());
   const primeiro = nome.split(/\s+/)[0];
   $("vazio").hidden = true;
@@ -483,16 +714,24 @@ function mostrar(nome, nasc) {
   $("r-prox").textContent = r.ehHoje ? "Hoje!" : fmt(r.ateProx);
   $("r-prox-sub").textContent = r.ehHoje ? "" : (r.ateProx === 1 ? "dia" : "dias");
   $("r-sem").textContent = SEMANA[nasc.getDay()] + (nasc.getDay() % 6 ? "-feira" : "");
-  $("r-data").textContent = nasc.toLocaleDateString("pt-BR");
+  $("r-data").textContent = `${nasc.toLocaleDateString("pt-BR")}, às ${hora} · ${lugar.nome}`;
   const s = signo(nasc);
   $("c-signo").dataset.elem = s.elem;
   $("r-glifo").textContent = s.glifo + "︎";
   $("r-signo").textContent = s.nome;
   $("r-signo-meta").textContent = `${pad(s.ini[1])}/${pad(s.ini[0])} a ${s.fim} · ${s.elem}`;
-  const lua = faseLua(nasc);
+  const asc = ascendente(utc, lugar.lat, lugar.lon);
+  $("c-asc").dataset.elem = asc.elem;
+  $("r-asc-glifo").textContent = asc.glifo + "\uFE0E";
+  $("r-asc").textContent = asc.nome;
+  $("r-asc-meta").textContent = `${asc.grau}° de ${asc.nome} · ${asc.elem}`;
+  const lua = faseLua(utc);
   $("r-lua").textContent = lua.nome;
   $("r-lua-meta").textContent = `${Math.round(lua.ilum * 100)}% iluminada · ${lua.crescente ? "crescendo" : "minguando"}`;
   $("r-lua-path").setAttribute("d", desenhoLua(lua.ilum, lua.crescente));
+  const luaSig = signoLunar(utc);
+  $("r-lua-signo").textContent = `Lua em ${luaSig.nome} (${luaSig.grau}°)`;
+  $("r-perfil").replaceChildren(textoPerfil(primeiro, s.nome, asc.nome, luaSig.nome, lua.nome));
   const nota = $("r-nota");
   if (r.ehHoje) { nota.textContent = `Hoje é o seu aniversário, ${primeiro}. Parabéns pelos ${r.anos}!`; nota.hidden = false; }
   else if (nasc.getMonth() === 1 && nasc.getDate() === 29) { nota.textContent = "Nascimento em 29 de fevereiro: nos anos não bissextos, o aniversário é contado em 28 de fevereiro."; nota.hidden = false; }
@@ -503,7 +742,7 @@ function mostrar(nome, nasc) {
 }
 
 function erro(msg, campo) {
-  for (const id of ["nome", "nasc"]) $(id).setAttribute("aria-invalid", id === campo ? "true" : "false");
+  for (const id of ["nome", "nasc", "hora", "cidade"]) $(id).setAttribute("aria-invalid", id === campo ? "true" : "false");
   $("erro").textContent = msg || "";
   $("erro").hidden = !msg;
   if (campo) $(campo).focus();
@@ -518,8 +757,13 @@ $("form").addEventListener("submit", e => {
   if (!nasc) return erro("Escolha uma data de nascimento válida.", "nasc");
   if (nasc > hoje()) return erro("A data de nascimento não pode ser no futuro.", "nasc");
   if (hoje().getFullYear() - nasc.getFullYear() > 130) return erro("Confira o ano: a data informada passa de 130 anos.", "nasc");
+  const hm = /^(\d{2}):(\d{2})/.exec($("hora").value);
+  if (!hm) return erro("Informe a hora de nascimento.", "hora");
+  if (!lugar) return erro(cidade.value.trim() ? "Escolha a cidade na lista de sugestões." : "Informe a cidade de nascimento.", "cidade");
+  const utc = localParaUTC(nasc, +hm[1], +hm[2], lugar.tz);
+  if (utc > Date.now()) return erro("A data e a hora de nascimento não podem ser no futuro.", "hora");
   erro("");
-  mostrar(nome, nasc);
+  mostrar(nome, nasc, utc, `${hm[1]}:${hm[2]}`);
 });
 </script>
 </body>
