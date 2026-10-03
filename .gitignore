@@ -1,0 +1,19 @@
+# Dependências e builds (gerados a partir do package.json; nunca vão para o Git)
+node_modules/
+dist/
+
+# Segredos e configurações locais: chaves do Supabase, tokens etc.
+# Use .env.local na sua máquina e as Environment Variables na Vercel.
+.env
+.env.*
+!.env.example
+
+# Vercel
+.vercel/
+
+# Sistema e editores
+.DS_Store
+Thumbs.db
+*.log
+.vscode/*
+!.vscode/extensions.json
