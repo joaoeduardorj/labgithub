@@ -25,6 +25,8 @@
   color-scheme: dark;
 }
 *, *::before, *::after { box-sizing: border-box; }
+/* Garante que [hidden] vença o display das classes (ex.: .results-grid usa display: grid) */
+[hidden] { display: none !important; }
 body {
   margin: 0; min-height: 100vh;
   background: var(--bg); color: var(--text);
@@ -34,18 +36,18 @@ body {
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 ::selection { background: color-mix(in srgb, var(--accent) 30%, transparent); }
 
-@keyframes slideUp { from { transform: translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes twinkle { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
 
 .container { display: flex; height: 100vh; }
 
-.input-section {
+.input-section, .results-section {
   flex: 1; position: relative; overflow-y: auto;
   display: flex; flex-direction: column; justify-content: center; align-items: center;
-  padding: 40px; border-right: 1px solid var(--divider);
+  padding: 40px;
   background: linear-gradient(135deg, #0f1219 0%, #1a1f2e 50%, #0d1620 100%);
 }
-.input-section::before {
+.input-section { border-right: 1px solid var(--divider); }
+.input-section::before, .results-section::before {
   content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .5;
   background-image:
     radial-gradient(2px 2px at 20px 30px, #eee, transparent),
@@ -55,18 +57,6 @@ body {
     radial-gradient(2px 2px at 90px 10px, #eee, transparent);
   background-size: 200px 200px;
   animation: twinkle 4s ease-in-out infinite;
-}
-.results-section {
-  flex: 1; position: relative; overflow-y: auto;
-  display: flex; flex-direction: column; justify-content: center; align-items: center;
-  padding: 40px;
-  background: linear-gradient(to bottom, #0a0e1a 0%, #1a1f3a 50%, #0d1625 100%);
-}
-.results-section::before {
-  content: ""; position: absolute; inset: 0; pointer-events: none;
-  background-image:
-    radial-gradient(circle at 20% 50%, rgba(145, 132, 217, .1) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(145, 132, 217, .05) 0%, transparent 50%);
 }
 .input-section > *, .results-section > * { position: relative; z-index: 1; }
 
@@ -97,38 +87,143 @@ body {
 .btn-submit:active { background: color-mix(in srgb, var(--accent) 22%, transparent); }
 .error { color: var(--error); font-size: 13px; margin: 8px 0 0; text-align: center; }
 
+/* Resultados: cartões de vidro que surgem um a um e ficam flutuando no espaço */
+@keyframes pop { from { opacity: 0; scale: .6; } 60% { opacity: 1; scale: 1.05; } to { opacity: 1; scale: 1; } }
+@keyframes float {
+  0%, 100% { translate: 0 0; rotate: var(--tilt); }
+  50% { translate: 0 var(--lift); rotate: calc(var(--tilt) * -1); }
+}
+@keyframes glow { 0%, 100% { filter: drop-shadow(0 0 10px var(--c1)) drop-shadow(0 0 24px var(--c2)); } 50% { filter: drop-shadow(0 0 16px var(--c1)) drop-shadow(0 0 40px var(--c2)); } }
+@keyframes moonGlow { 0%, 100% { filter: drop-shadow(0 0 12px rgba(255, 228, 150, .55)) drop-shadow(0 0 32px rgba(255, 210, 120, .25)); } 50% { filter: drop-shadow(0 0 20px rgba(255, 228, 150, .8)) drop-shadow(0 0 50px rgba(255, 210, 120, .4)); } }
+
 .results-grid {
-  width: 100%; max-width: 400px;
-  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
-  animation: slideUp .5s ease-out;
+  width: 100%; max-width: 460px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 22px 18px;
+  padding: 12px 0;
 }
 .result-card {
-  min-width: 0; padding: 20px; text-align: center;
-  background: var(--surface); border: 1px solid var(--divider); border-radius: var(--radius);
+  --tint: var(--accent); --tilt: -1deg; --lift: -10px; --dur: 6s; --i: 0;
+  min-width: 0; padding: 20px 16px; text-align: center;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  border: 1px solid color-mix(in srgb, var(--tint) 45%, transparent);
+  border-radius: 18px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .03) inset,
+              0 10px 30px rgba(0, 0, 0, .45),
+              0 0 28px color-mix(in srgb, var(--tint) 25%, transparent);
+  animation: pop .7s cubic-bezier(.2, .9, .3, 1.2) backwards, float var(--dur) ease-in-out infinite;
+  animation-delay: calc(var(--i) * 120ms), calc(var(--i) * -900ms);
+  transition: scale .25s, box-shadow .25s;
 }
+.result-card:hover {
+  scale: 1.04;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .05) inset,
+              0 14px 40px rgba(0, 0, 0, .5),
+              0 0 44px color-mix(in srgb, var(--tint) 45%, transparent);
+}
+.result-card:nth-child(2) { --tilt: 1.5deg;  --lift: -14px; --dur: 7s; }
+.result-card:nth-child(3) { --tilt: -1.5deg; --lift: -12px; --dur: 6.5s; }
+.result-card:nth-child(4) { --tilt: 2deg;    --lift: -8px;  --dur: 5.5s; }
+.result-card:nth-child(5) { --tilt: -2deg;   --lift: -11px; --dur: 7.5s; }
+.result-card:nth-child(6) { --tilt: 1deg;    --lift: -9px;  --dur: 6.2s; }
 .result-card.large { grid-column: 1 / -1; }
 .result-label {
-  font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+  font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
   color: var(--muted); margin-bottom: 8px; overflow-wrap: anywhere;
 }
 .result-value {
-  font-size: 28px; font-weight: 600; line-height: 1.2; color: var(--accent);
+  font-size: 28px; font-weight: 600; line-height: 1.2; color: var(--tint);
   font-variant-numeric: tabular-nums; overflow-wrap: anywhere;
 }
 .result-value.text { font-size: 20px; }
-.result-card.large .result-value { font-size: 36px; }
 .result-sub { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
-.moon { width: 40px; height: 40px; margin-bottom: 8px; }
-.moon .dark { fill: var(--moon-dark); }
-.moon .lit { fill: var(--moon-lit); }
-.moon .rim { fill: none; stroke: var(--divider); stroke-width: 1; }
+
+.card-age { --tint: #b5abfc; }
+.card-age .result-value {
+  font-size: 52px; line-height: 1.05;
+  background: linear-gradient(90deg, #b5abfc, #ff9ad5, #7fdcff);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.card-dias { --tint: #7fdcff; }
+.card-prox { --tint: #ff9ad5; }
+.card-sem  { --tint: #c6f36b; }
+
+/* Signo: símbolo grande, com degradê e brilho na cor do elemento */
+.card-signo { --c1: #b5abfc; --c2: #7fdcff; --tint: var(--c1); }
+.card-signo[data-elem="Fogo"]  { --c1: #ff7a45; --c2: #ffd166; }
+.card-signo[data-elem="Terra"] { --c1: #5ee29b; --c2: #c6f36b; }
+.card-signo[data-elem="Ar"]    { --c1: #7fdcff; --c2: #c9b6ff; }
+.card-signo[data-elem="Água"]  { --c1: #4fa3ff; --c2: #5ef2e0; }
+.glyph {
+  font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", "Apple Symbols", "DejaVu Sans", sans-serif;
+  font-size: 84px; line-height: 1; margin: 4px 0 10px;
+  background: linear-gradient(135deg, var(--c1), var(--c2));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: glow 3s ease-in-out infinite;
+}
+.card-signo .result-value { color: var(--c1); }
+
+/* Lua: desenho grande e luminoso */
+.card-lua { --tint: #ffe08a; }
+.moon { width: 104px; height: 104px; margin: 4px 0 12px; animation: moonGlow 4s ease-in-out infinite; }
+.moon .dark { fill: #1b2140; }
+.moon .lit { fill: #fff1b8; }
+.moon .rim { fill: none; stroke: rgba(255, 241, 184, .35); stroke-width: .8; }
+
 .note {
   grid-column: 1 / -1; margin: 0; font-size: 14px; text-align: center;
-  padding: 12px 16px; border-radius: var(--radius);
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  padding: 12px 16px; border-radius: 18px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  animation: pop .7s cubic-bezier(.2, .9, .3, 1.2) .8s backwards;
 }
+/* Cenário astronômico: aparece no fundo dos resultados depois do primeiro cálculo */
+@keyframes drift { 0%, 100% { translate: 0 0; } 50% { translate: 0 -14px; } }
+@keyframes spin { to { rotate: 360deg; } }
+@keyframes shoot {
+  0% { opacity: 0; translate: 0 0; }
+  4% { opacity: 1; }
+  14% { opacity: 0; translate: -420px 260px; }
+  100% { opacity: 0; translate: -420px 260px; }
+}
+.results-section > .cosmos {
+  position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+  opacity: 0; transition: opacity 1.6s ease;
+}
+.results-section.revelado > .cosmos { opacity: 1; }
+.cosmos > * { position: absolute; }
+.nebula {
+  top: -10%; right: -15%; width: 70%; height: 60%; filter: blur(30px); opacity: .55;
+  background:
+    radial-gradient(closest-side at 40% 45%, rgba(255, 110, 199, .55), transparent),
+    radial-gradient(closest-side at 65% 60%, rgba(127, 92, 255, .6), transparent),
+    radial-gradient(closest-side at 50% 30%, rgba(80, 200, 255, .35), transparent);
+}
+.nebula.b { top: auto; bottom: -20%; left: -20%; right: auto; width: 60%; height: 50%; opacity: .35; }
+.planet-ring { left: 4%; bottom: 6%; width: 190px; animation: drift 12s ease-in-out infinite; }
+.planet-small { left: 10%; top: 9%; width: 54px; animation: drift 9s ease-in-out -3s infinite; }
+.planet-red { right: 9%; top: 46%; width: 34px; animation: drift 10s ease-in-out -6s infinite; opacity: .85; }
+.galaxy { right: 5%; bottom: 5%; width: 170px; opacity: .8; }
+.galaxy g { transform-origin: center; transform-box: fill-box; animation: spin 90s linear infinite; }
+.constellation { left: 30%; top: 4%; width: 220px; opacity: .7; }
+.shooting {
+  top: 12%; right: 6%; width: 140px; height: 2px; rotate: -32deg; transform-origin: left;
+  background: linear-gradient(90deg, #fff, rgba(255, 255, 255, 0));
+  border-radius: 2px; box-shadow: 0 0 8px #fff;
+  animation: shoot 7s ease-in 2s infinite;
+}
+.shooting.b { top: 38%; right: 30%; width: 100px; animation-delay: 5.5s; animation-duration: 9s; }
+@media (max-width: 900px) {
+  .planet-ring { width: 130px; }
+  .galaxy { width: 120px; }
+  .constellation { left: auto; right: 4%; width: 160px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cosmos *, .galaxy g { animation: none !important; }
+  .shooting { display: none; }
+}
+
 .empty-state { color: color-mix(in srgb, var(--text) 50%, transparent); font-size: 14px; text-align: center; max-width: 280px; margin: 0; }
 
 @media (max-width: 900px) {
@@ -140,7 +235,7 @@ body {
   .results-grid { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .input-section::before, .results-grid { animation: none; }
+  .input-section::before, .results-section::before, .result-card, .glyph, .moon, .note { animation: none; }
 }
 </style>
 </head>
@@ -167,35 +262,96 @@ body {
   </section>
 
   <section class="results-section" aria-live="polite">
+    <div class="cosmos" aria-hidden="true">
+      <div class="nebula"></div>
+      <div class="nebula b"></div>
+
+      <svg class="constellation" viewBox="0 0 220 120">
+        <g stroke="rgba(200, 210, 255, .45)" stroke-width="1" fill="none">
+          <polyline points="10,70 48,58 84,64 112,48 150,30 186,40 206,18"/>
+          <polyline points="112,48 120,86 160,96 150,30"/>
+        </g>
+        <g fill="#fff">
+          <circle cx="10" cy="70" r="2"/><circle cx="48" cy="58" r="2.4"/><circle cx="84" cy="64" r="1.8"/>
+          <circle cx="112" cy="48" r="2.6"/><circle cx="150" cy="30" r="2.2"/><circle cx="186" cy="40" r="2"/>
+          <circle cx="206" cy="18" r="2.8"/><circle cx="120" cy="86" r="2"/><circle cx="160" cy="96" r="2.2"/>
+        </g>
+      </svg>
+
+      <svg class="planet-small" viewBox="0 0 60 60">
+        <defs>
+          <radialGradient id="pg-azul" cx="35%" cy="30%" r="75%">
+            <stop offset="0" stop-color="#bfe9ff"/><stop offset=".5" stop-color="#3f8fe0"/><stop offset="1" stop-color="#14224d"/>
+          </radialGradient>
+        </defs>
+        <circle cx="30" cy="30" r="26" fill="url(#pg-azul)"/>
+        <path d="M8 26 Q30 20 52 28" stroke="rgba(255,255,255,.25)" stroke-width="3" fill="none"/>
+        <path d="M10 38 Q30 33 50 40" stroke="rgba(255,255,255,.15)" stroke-width="2" fill="none"/>
+      </svg>
+
+      <svg class="planet-red" viewBox="0 0 40 40">
+        <defs>
+          <radialGradient id="pg-verm" cx="35%" cy="30%" r="75%">
+            <stop offset="0" stop-color="#ffc2a1"/><stop offset=".55" stop-color="#d4572f"/><stop offset="1" stop-color="#3a1310"/>
+          </radialGradient>
+        </defs>
+        <circle cx="20" cy="20" r="17" fill="url(#pg-verm)"/>
+      </svg>
+
+      <svg class="planet-ring" viewBox="0 0 200 140">
+        <defs>
+          <radialGradient id="pg-saturno" cx="38%" cy="32%" r="75%">
+            <stop offset="0" stop-color="#fff0c9"/><stop offset=".5" stop-color="#e0a85e"/><stop offset="1" stop-color="#4a2a17"/>
+          </radialGradient>
+          <linearGradient id="pg-anel" x1="0" x2="1">
+            <stop offset="0" stop-color="rgba(255,226,170,0)"/><stop offset=".25" stop-color="rgba(255,226,170,.8)"/>
+            <stop offset=".75" stop-color="rgba(220,170,255,.7)"/><stop offset="1" stop-color="rgba(220,170,255,0)"/>
+          </linearGradient>
+        </defs>
+        <g transform="rotate(-18 100 70)">
+          <path d="M14 70 A86 22 0 0 1 186 70" stroke="url(#pg-anel)" stroke-width="7" fill="none" opacity=".6"/>
+          <circle cx="100" cy="70" r="44" fill="url(#pg-saturno)"/>
+          <path d="M60 60 Q100 52 140 62" stroke="rgba(120,60,20,.25)" stroke-width="5" fill="none"/>
+          <path d="M58 78 Q100 72 142 80" stroke="rgba(120,60,20,.2)" stroke-width="4" fill="none"/>
+          <path d="M14 70 A86 22 0 0 0 186 70" stroke="url(#pg-anel)" stroke-width="7" fill="none"/>
+        </g>
+      </svg>
+
+      <svg class="galaxy" viewBox="0 0 200 200">
+        <defs>
+          <radialGradient id="pg-nucleo">
+            <stop offset="0" stop-color="#fff"/><stop offset=".25" stop-color="#ffe6f5"/>
+            <stop offset=".6" stop-color="rgba(181,171,252,.35)"/><stop offset="1" stop-color="rgba(181,171,252,0)"/>
+          </radialGradient>
+        </defs>
+        <g>
+          <ellipse cx="100" cy="100" rx="90" ry="34" fill="url(#pg-nucleo)" opacity=".5"/>
+          <path d="M100 100 C130 70 175 85 170 110 C165 135 120 140 100 130" stroke="rgba(200,190,255,.55)" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <path d="M100 100 C70 130 25 115 30 90 C35 65 80 60 100 70" stroke="rgba(255,170,220,.5)" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <circle cx="100" cy="100" r="16" fill="url(#pg-nucleo)"/>
+        </g>
+      </svg>
+
+      <div class="shooting"></div>
+      <div class="shooting b"></div>
+    </div>
+
     <p class="empty-state" id="vazio">Preencha seu nome e data de nascimento para descobrir informações fascinantes sobre você ✨</p>
 
     <div class="results-grid" id="result" hidden>
-      <div class="result-card large">
+      <div class="result-card large card-age" style="--i:0">
         <div class="result-label" id="r-ola"></div>
         <div class="result-value" id="r-anos"></div>
         <p class="result-sub" id="r-exata"></p>
       </div>
-      <div class="result-card">
-        <div class="result-label">Dias vividos</div>
-        <div class="result-value" id="r-dias"></div>
-      </div>
-      <div class="result-card">
-        <div class="result-label">Próx. aniversário</div>
-        <div class="result-value" id="r-prox"></div>
-        <p class="result-sub" id="r-prox-sub"></p>
-      </div>
-      <div class="result-card">
-        <div class="result-label">Nasceu em</div>
-        <div class="result-value text" id="r-sem"></div>
-        <p class="result-sub" id="r-data"></p>
-      </div>
-      <div class="result-card">
+      <div class="result-card card-signo" id="c-signo" style="--i:1">
         <div class="result-label">Signo</div>
+        <div class="glyph" id="r-glifo" aria-hidden="true"></div>
         <div class="result-value text" id="r-signo"></div>
         <p class="result-sub" id="r-signo-meta"></p>
       </div>
-      <div class="result-card large">
-        <div class="result-label">Fase da lua</div>
+      <div class="result-card card-lua" style="--i:2">
+        <div class="result-label">Lua ao nascer</div>
         <svg class="moon" viewBox="-22 -22 44 44" role="img" aria-labelledby="r-lua">
           <circle class="dark" r="20"></circle>
           <path class="lit" id="r-lua-path"></path>
@@ -203,6 +359,20 @@ body {
         </svg>
         <div class="result-value text" id="r-lua"></div>
         <p class="result-sub" id="r-lua-meta"></p>
+      </div>
+      <div class="result-card card-dias" style="--i:3">
+        <div class="result-label">Dias vividos</div>
+        <div class="result-value" id="r-dias"></div>
+      </div>
+      <div class="result-card card-prox" style="--i:4">
+        <div class="result-label">Próx. aniversário</div>
+        <div class="result-value" id="r-prox"></div>
+        <p class="result-sub" id="r-prox-sub"></p>
+      </div>
+      <div class="result-card large card-sem" style="--i:5">
+        <div class="result-label">Nasceu em</div>
+        <div class="result-value text" id="r-sem"></div>
+        <p class="result-sub" id="r-data"></p>
       </div>
       <p class="note" id="r-nota" hidden></p>
     </div>
@@ -305,16 +475,19 @@ function mostrar(nome, nasc) {
   const r = calcular(nasc, hoje());
   const primeiro = nome.split(/\s+/)[0];
   $("vazio").hidden = true;
+  document.querySelector(".results-section").classList.add("revelado");
   $("r-ola").textContent = `Olá, ${primeiro}`;
   $("r-anos").textContent = plural(r.anos, "ano", "anos");
   $("r-exata").textContent = `${plural(r.anos,"ano","anos")}, ${plural(r.meses,"mês","meses")} e ${plural(r.dias,"dia","dias")}`;
   $("r-dias").textContent = fmt(r.vividos);
   $("r-prox").textContent = r.ehHoje ? "Hoje!" : fmt(r.ateProx);
   $("r-prox-sub").textContent = r.ehHoje ? "" : (r.ateProx === 1 ? "dia" : "dias");
-  $("r-sem").textContent = SEMANA[nasc.getDay()];
+  $("r-sem").textContent = SEMANA[nasc.getDay()] + (nasc.getDay() % 6 ? "-feira" : "");
   $("r-data").textContent = nasc.toLocaleDateString("pt-BR");
   const s = signo(nasc);
-  $("r-signo").textContent = `${s.glifo}︎ ${s.nome}`;
+  $("c-signo").dataset.elem = s.elem;
+  $("r-glifo").textContent = s.glifo + "︎";
+  $("r-signo").textContent = s.nome;
   $("r-signo-meta").textContent = `${pad(s.ini[1])}/${pad(s.ini[0])} a ${s.fim} · ${s.elem}`;
   const lua = faseLua(nasc);
   $("r-lua").textContent = lua.nome;
