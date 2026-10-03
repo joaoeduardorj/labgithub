@@ -88,6 +88,23 @@ body {
   color: var(--accent); background: none; border: 0; text-decoration: underline; text-underline-offset: 3px;
 }
 .btn-link:hover { color: var(--text); }
+
+/* Salvar mapa (abaixo dos resultados) e lista "Meus mapas" (abaixo da conta) */
+.salvar-mapa { width: 100%; max-width: 320px; margin: 24px auto 0; text-align: center; font-size: 14px; color: var(--muted); }
+.salvar-mapa .btn-submit { margin-top: 0; }
+.salvar-mapa b { color: var(--text); font-weight: 500; }
+.meus-mapas { width: 100%; max-width: 320px; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--divider); }
+.meus-mapas-titulo { margin: 0 0 12px; font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: .05em; color: color-mix(in srgb, var(--text) 70%, transparent); }
+.meus-mapas ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.meus-mapas li { display: flex; align-items: center; gap: 4px; border: 1px solid var(--divider); border-radius: var(--radius); }
+.meus-mapas li[aria-current] { border-color: var(--accent); }
+.mapa-abrir {
+  flex: 1; min-width: 0; padding: 8px 10px; cursor: pointer; text-align: left;
+  font: inherit; font-size: 14px; color: var(--text); background: none; border: 0; border-radius: var(--radius);
+}
+.mapa-abrir:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.mapa-abrir span, .mapa-abrir small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mapa-abrir small { font-size: 12px; color: var(--muted); }
 .error { color: var(--error); font-size: 13px; margin: 8px 0 0; text-align: center; }
 .field-row { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; }
 .field-row .field { min-width: 0; }
