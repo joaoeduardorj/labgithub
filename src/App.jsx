@@ -2,12 +2,15 @@ import { useState } from "react";
 import Formulario from "./components/Formulario.jsx";
 import Resultados from "./components/Resultados.jsx";
 import Cosmos from "./components/Cosmos.jsx";
+import Conta from "./components/Conta.jsx";
+import { useSessao } from "./hooks/useSessao.js";
 import { calcularMapa } from "./lib/mapa.js";
 
 export default function App() {
   const [mapa, setMapa] = useState(null);
   // Muda a cada cálculo: a `key` nova recria os cartões e reinicia a animação de entrada.
   const [calculo, setCalculo] = useState(0);
+  const { sessao, carregando } = useSessao();
 
   function calcular(dados) {
     setMapa(calcularMapa(dados));
@@ -18,6 +21,7 @@ export default function App() {
     <div className="container">
       <section className="input-section">
         <Formulario onCalcular={calcular} />
+        <Conta sessao={sessao} carregando={carregando} />
       </section>
 
       <section className={"results-section" + (mapa ? " revelado" : "")} aria-live="polite">
