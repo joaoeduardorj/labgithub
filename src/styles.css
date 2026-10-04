@@ -75,6 +75,19 @@ body {
 }
 .btn-submit:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
 .btn-submit:active { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+.btn-submit:disabled { opacity: .6; cursor: progress; }
+
+/* Conta: login por link mágico, abaixo do formulário */
+.conta { width: 100%; max-width: 320px; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--divider); text-align: center; }
+.conta .field { text-align: left; }
+.conta .btn-submit { margin-top: 4px; }
+.conta-info { margin: 0 0 16px; font-size: 14px; color: var(--muted); overflow-wrap: anywhere; }
+.conta-info b { color: var(--text); font-weight: 500; }
+.btn-link {
+  padding: 4px 8px; cursor: pointer; font: inherit; font-size: 14px;
+  color: var(--accent); background: none; border: 0; text-decoration: underline; text-underline-offset: 3px;
+}
+.btn-link:hover { color: var(--text); }
 .error { color: var(--error); font-size: 13px; margin: 8px 0 0; text-align: center; }
 .field-row { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; }
 .field-row .field { min-width: 0; }
